@@ -1607,17 +1607,44 @@ function ImGui:CreateWindow(WindowConfig)
 			Content.Size = UDim2.fromScale(0, 1)
 		end
 
-		TabButton.Activated:Connect(function()
-			WindowConfig:ShowTab(Config)
-		end)
+		TabButton.BackgroundColor3 = TitleBar.BackgroundColor3
+        TabButton.BackgroundTransparency = 0.65
+        TabButton:SetAttribute("Selected", false)
 
-		function Config:GetContentSize()
-			return Content.AbsoluteSize
-		end
+        local function setTabButtonState(Button, State)
+            local transparencies = {
+                Normal = 0.65,
+                Hover = 0.35,
+                Selected = 0.12
+            }
 
-		--// Apply animations
-		Config = ImGui:ContainerClass(Content, Config, Window)
-		ImGui:ApplyAnimations(TabButton, "Tabs")
+            Button:SetAttribute("Selected", State == "Selected")
+            ImGui:Tween(Button, {
+                BackgroundTransparency = transparencies[State] or 0.65
+            })
+        end
+
+        TabButton.MouseEnter:Connect(function()
+            if not TabButton:GetAttribute("Selected") then
+                setTabButtonState(TabButton, "Hover")
+            end
+        end)
+
+        TabButton.MouseLeave:Connect(function()
+            if not TabButton:GetAttribute("Selected") then
+                setTabButtonState(TabButton, "Normal")
+            end
+        end)
+
+        TabButton.Activated:Connect(function()
+            WindowConfig:ShowTab(Config)
+        end)
+
+        function Config:GetContentSize()
+            return Content.AbsoluteSize
+        end
+
+        Config = ImGui:ContainerClass(Content, Config, Window)
 
 		--// Automatic sizes
 		self:UpdateBody()
@@ -1657,25 +1684,35 @@ function ImGui:CreateWindow(WindowConfig)
 	end
 
 	--// Tab change system 
-	function WindowConfig:ShowTab(TabClass: SharedTable)
-		local TargetPage: Frame = TabClass.Content
+function WindowConfig:ShowTab(TabClass: SharedTable)
+	local TargetPage: Frame = TabClass.Content
+	local TargetButton = TabClass.Button
 
-		--// Page animation
-		if not TargetPage.Visible and not TabClass.NoAnimation then
-			TargetPage.Position = UDim2.fromOffset(0, 5)
-		end
-
-		--// Hide other tabs
-		for _, Page in next, Body:GetChildren() do
-			Page.Visible = Page == TargetPage
-		end
-
-		--// Page animation
-		ImGui:Tween(TargetPage, {
-			Position = UDim2.fromOffset(0, 0)
-		})
-		return self
+	if not TargetPage.Visible and not TabClass.NoAnimation then
+		TargetPage.Position = UDim2.fromOffset(0, 5)
 	end
+
+	for _, Page in next, Body:GetChildren() do
+		Page.Visible = Page == TargetPage
+	end
+
+	for _, Child in next, ToolBar:GetChildren() do
+		if Child:IsA("TextButton") and Child ~= ToolBar.TabButton then
+			local isSelected = Child == TargetButton
+			Child:SetAttribute("Selected", isSelected)
+
+			ImGui:Tween(Child, {
+				BackgroundTransparency = isSelected and 0.12 or 0.65
+			})
+		end
+	end
+
+	ImGui:Tween(TargetPage, {
+		Position = UDim2.fromOffset(0, 0)
+	})
+
+	return self
+end
 
 	function WindowConfig:Center() --// Without an Anchor point
 		local Size = Window.AbsoluteSize
