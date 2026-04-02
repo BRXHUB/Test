@@ -1504,9 +1504,22 @@ function ImGui:CreateWindow(WindowConfig)
 	local TitleBar: Frame = Content.TitleBar
 	TitleBar.Visible = WindowConfig.NoTitleBar ~= true
 
+    local ToolBarLayout = ToolBar:FindFirstChildOfClass("UIListLayout")
+    if ToolBarLayout then
+        ToolBarLayout.Padding = UDim.new(0, 6)
+    end
+
+    local ToolBarPadding = ToolBar:FindFirstChildOfClass("UIPadding")
+    if ToolBarPadding then
+        ToolBarPadding.PaddingLeft = UDim.new(0, 6)
+        ToolBarPadding.PaddingRight = UDim.new(0, 6)
+    end
+
 	local Toggle = TitleBar.Left.Toggle
 	Toggle.Visible = WindowConfig.NoCollapse ~= true
 	ImGui:ApplyAnimations(Toggle.ToggleButton, "Tabs")
+
+    
 
 	local ToolBar = Content.ToolBar
 	ToolBar.Visible = WindowConfig.TabsBar ~= false
@@ -1587,6 +1600,14 @@ function ImGui:CreateWindow(WindowConfig)
 	function WindowConfig:CreateTab(Config)
 		local Name = Config.Name or ""
 		local TabButton = ToolBar.TabButton:Clone()
+        TabButton.AutoButtonColor = false
+
+        local TabCorner = TabButton:FindFirstChildOfClass("UICorner")
+        if not TabCorner then
+            TabCorner = Instance.new("UICorner")
+            TabCorner.Parent = TabButton
+        end
+        TabCorner.CornerRadius = UDim.new(0, 6)
 		TabButton.Name = Name
 		TabButton.Text = Name
 		TabButton.Visible = true
